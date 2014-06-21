@@ -1,0 +1,4 @@
+thetaexif
+=========
+
+THETA EXIF Library
