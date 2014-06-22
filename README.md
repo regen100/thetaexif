@@ -1,4 +1,0 @@
-thetaexif
-=========
-
-THETA EXIF Library
