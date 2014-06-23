@@ -33,8 +33,11 @@ def gen_build_ext(table={}):
             else:
                 trans = {}
             for src, dst in trans.iteritems():
-                ext.extra_compile_args[:] = [dst[0] if x == src else x for x in ext.extra_compile_args]
-                ext.extra_link_args[:] = [dst[1] if x == src else x for x in ext.extra_link_args]
-                ext.libraries[:] = [dst[2] if x == src else x for x in ext.libraries]
+                ext.extra_compile_args[:] = [dst[0] if x == src else x
+                                             for x in ext.extra_compile_args]
+                ext.extra_link_args[:] = [dst[1] if x == src else x
+                                          for x in ext.extra_link_args]
+                ext.libraries[:] = [dst[2] if x == src else x
+                                    for x in ext.libraries]
 
     return new_build_ext
