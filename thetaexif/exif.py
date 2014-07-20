@@ -51,7 +51,8 @@ class TagReader(collections.Mapping):
     '''
     EXIF tag reader class for THETA image.
     '''
-    subdir = {tag.RICOH_SUBDIR: 20, tag.THETA_SUBDIR: 0}
+    EXIF_HEADER = 'Exif\x00\x00'
+    SUBDIR_HEADER = {tag.RICOH_SUBDIR: 20, tag.THETA_SUBDIR: 0}
 
     def __init__(self, endian, fp):
         self.endian = endian[:2]
@@ -102,8 +103,8 @@ class TagReader(collections.Mapping):
             elif len(value) == 1:
                 value = value[0]
 
-            if key in self.subdir:
-                self.fp.seek(value + self.subdir[key])
+            if key in self.SUBDIR_HEADER:
+                self.fp.seek(value + self.SUBDIR_HEADER[key])
                 self.data[key] = TagReader(self.endian, self.fp)
             else:
                 self.data[key] = value
@@ -130,6 +131,10 @@ class TagReader(collections.Mapping):
                 d[k] = v
         return d
 
+    def tobytes(self):
+        self.fp.seek(0)
+        return self.EXIF_HEADER + self.fp.read()
+
     @classmethod
     def load(cls, img):
         '''
@@ -140,7 +145,7 @@ class TagReader(collections.Mapping):
         if 'exif' not in img.info:
             raise ValueError('No EXIF.')
 
-        body = img.info['exif'][6:]
+        body = img.info['exif'][len(cls.EXIF_HEADER):]
         offset = body.find('Ricoh\x00\x00\x00')
         if offset == -1:
             raise ValueError('No RICOH maker note.')

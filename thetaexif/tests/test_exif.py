@@ -54,3 +54,6 @@ class TestExif(unittest.TestCase):
 
         self.assertIn(thetaexif.tag.COMPASS_ES, subdir)
         self.assertEqual(subdir[thetaexif.tag.COMPASS_ES], 22.5)
+
+        # tobytes()
+        self.assertEqual(reader.tobytes(), img.info['exif'])
