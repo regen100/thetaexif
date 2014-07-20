@@ -1,6 +1,5 @@
 import os
 import argparse
-from PIL import Image
 import projection
 
 
@@ -12,6 +11,8 @@ def rectify(argv=None):
         '-c', '--compass', action='store_true', help='use compass')
     parser.add_argument(
         '-d', '--dir', help='output directory (default: source directory)')
+    parser.add_argument(
+        '-e', '--exif', action='store_true', help='write EXIF')
     args = parser.parse_args(argv)
 
     if args.dir and not os.path.exists(args.dir):
@@ -25,6 +26,11 @@ def rectify(argv=None):
             dst = base + '_rectified' + ext
 
         rectified = projection.rectify(src, args.compass)
-        Image.fromarray(rectified).save(dst)
+
+        params = {}
+        if args.exif:
+            params['exif'] = rectified.info['exif']
+
+        rectified.save(dst, **params)
 
     return 0

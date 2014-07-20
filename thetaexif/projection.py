@@ -45,8 +45,7 @@ ry = functools.partial(rotation, [0, 1, 0])
 rz = functools.partial(rotation, [0, 0, 1])
 
 
-def getpose(img, compass=False):
-    reader = exif.TagReader.load(img)
+def getpose(reader, compass=False):
     zenith = map(float, reader[tag.THETA_SUBDIR][tag.ZENITH_ES])
     z, x = np.deg2rad(zenith)
     r = rx(x).dot(rz(z))
@@ -62,12 +61,15 @@ def rectify(img, compass=False):
     if not isinstance(img, Image.Image):
         img = Image.open(img)
 
-    r = getpose(img, compass).T
+    reader = exif.TagReader.load(img)
+    r = getpose(reader, compass).T
 
     imgarray = np.asarray(img)
     h, w = imgarray.shape[:2]
 
     coord = mapping.getcoordinates(w, h, r)
     rectified = remap(imgarray, coord)
+    resultimg = Image.fromarray(rectified)
+    resultimg.info['exif'] = reader.tobytes()
 
-    return rectified
+    return resultimg
