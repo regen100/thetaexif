@@ -5,7 +5,8 @@ import shutil
 from fractions import Fraction
 from PIL import Image
 from scipy import misc
-import thetaexif
+from thetaexif import tag
+from thetaexif.exif import ExifReader, TagReader
 
 
 class TestExif(unittest.TestCase):
@@ -24,54 +25,55 @@ class TestExif(unittest.TestCase):
 
         self.lena = Image.fromarray(misc.lena())
 
-    def test_tagreader_load(self):
+    def test_exifreader_load(self):
         # No EXIF image test
         img = self.lena
-        self.assertRaises(ValueError, thetaexif.TagReader.load, img)
+        self.assertRaises(ValueError, ExifReader, img)
 
-        # TagReader.load() test (str)
+        # ExifReader() test (str)
         img = self.image
-        reader = thetaexif.TagReader.load(img)
-        self.assertIsInstance(reader, thetaexif.TagReader)
+        ExifReader(img)
 
-        # TagReader.load() test (file object)
+        # ExifReader() test (file object)
         img = open(self.image, 'rb')
-        reader = thetaexif.TagReader.load(img)
-        self.assertIsInstance(reader, thetaexif.TagReader)
+        ExifReader(img)
 
-        # TagReader.load() test (PIL)
+        # ExifReader() test (PIL)
         img = Image.open(self.image)
-        reader = thetaexif.TagReader.load(img)
-        self.assertIsInstance(reader, thetaexif.TagReader)
+        ExifReader(img)
 
-    def test_tagreader_read(self):
-        reader = thetaexif.TagReader.load(self.image)
+    def test_exifreader_read(self):
+        reader = ExifReader(self.image)
 
-        # THETA IFD test
-        self.assertIn(thetaexif.tag.THETA_SUBDIR, reader)
-        subdir = reader[thetaexif.tag.THETA_SUBDIR]
-        self.assertIsInstance(subdir, thetaexif.TagReader)
+        self.assertEqual(len(reader.ifdlist), 2)
 
-        # Sensor test
-        self.assertIn(thetaexif.tag.ZENITH_ES, subdir)
-        self.assertEqual(subdir[thetaexif.tag.ZENITH_ES], (Fraction(200, 10),
-                                                           Fraction(-240, 10)))
+        self.assertIsInstance(reader.exif, TagReader)
+        self.assertIsInstance(reader.makernote, TagReader)
+        self.assertIsInstance(reader.theta, TagReader)
 
-        self.assertIn(thetaexif.tag.COMPASS_ES, subdir)
-        self.assertEqual(subdir[thetaexif.tag.COMPASS_ES], Fraction(225, 10))
+        self.assertIn(tag.ZENITH_ES, reader.theta)
+        self.assertEqual(reader.theta[tag.ZENITH_ES], (Fraction(200, 10),
+                                                       Fraction(-240, 10)))
+        self.assertIn(tag.COMPASS_ES, reader.theta)
+        self.assertEqual(reader.theta[tag.COMPASS_ES], Fraction(225, 10))
 
-    def test_tagreader_tobytes(self):
-        img = Image.open(self.image)
-        reader = thetaexif.TagReader.load(img)
+    def test_exifreader_tobytes(self):
+        reader = ExifReader(self.image)
 
-        self.assertEqual(reader.tobytes(), img.info['exif'])
+        self.assertEqual(reader.tobytes(), reader.img.info['exif'])
 
-    def test_tagreader_write(self):
-        img = Image.open(self.image)
-        reader = thetaexif.TagReader.load(img)
-        subdir = reader[thetaexif.tag.THETA_SUBDIR]
+    def test_exifreader_write(self):
+        reader = ExifReader(self.image)
 
         comapss = Fraction(1, 10)
-        subdir[thetaexif.tag.COMPASS_ES] = comapss
-        self.assertEqual(subdir[thetaexif.tag.COMPASS_ES], comapss)
-        self.assertNotEqual(reader.tobytes(), img.info['exif'])
+        reader.theta[tag.COMPASS_ES] = comapss
+        self.assertEqual(reader.theta[tag.COMPASS_ES], comapss)
+
+        comapss = 0.5
+        reader.theta[tag.COMPASS_ES] = comapss
+        self.assertEqual(reader.theta[tag.COMPASS_ES], comapss)
+
+        self.assertNotEqual(reader.tobytes(), reader.img.info['exif'])
+
+if __name__ == '__main__':
+    unittest.main()

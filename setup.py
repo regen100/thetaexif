@@ -47,9 +47,6 @@ setup(
     ],
     packages=find_packages(exclude=['*.tests']),
     ext_modules=ext_modules,
-    package_data={
-        'thetaexif.tests': ['*.jpg'],
-    },
     test_suite='thetaexif.tests',
     install_requires=['numpy', 'pillow'],
     tests_require=['scipy'],

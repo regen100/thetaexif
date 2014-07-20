@@ -1,6 +1,6 @@
 import sys
 import argparse
-import exif
+from exif import ExifReader, TagReader
 import tag
 
 
@@ -18,11 +18,11 @@ def main(argv=None):
         return '{}: {}'.format(tag, val)
 
     try:
-        reader = exif.TagReader.load(args.image)
-        for k, v in reader.iteritems():
-            if not isinstance(v, exif.TagReader):
+        reader = ExifReader(args.image)
+        for k, v in reader.makernote.iteritems():
+            if not isinstance(v, TagReader):
                 print formatter(tag.MARKERNOTE_TAGS.get(k, k), v)
-        for k, v in reader[tag.THETA_SUBDIR].iteritems():
+        for k, v in reader.theta.iteritems():
             print formatter(tag.THETASUBDIR_TGAS.get(k, k), v)
     except (IndexError, ValueError):
         print 'Error: %s does not have THETA EXIF tag' % args.image.name

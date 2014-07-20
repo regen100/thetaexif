@@ -11,23 +11,23 @@ import fractions
 from PIL import Image
 import tag
 
-TABLE = {
-    1: 'B',
-    2: 'c',
-    3: 'H',
-    4: 'I',
-    5: 'II',
-    6: 'b',
-    7: 'c',
-    8: 'h',
-    9: 'i',
-    10: 'ii',
-    11: 'f',
-    12: 'd',
-}
-
 
 class Handler(object):
+    TABLE = {
+        1: 'B',
+        2: 'c',
+        3: 'H',
+        4: 'I',
+        5: 'II',
+        6: 'b',
+        7: 'c',
+        8: 'h',
+        9: 'i',
+        10: 'ii',
+        11: 'f',
+        12: 'd',
+    }
+
     def __init__(self, typeid, formatter):
         self.typeid = typeid
         self.formatter = formatter
@@ -44,7 +44,8 @@ class Handler(object):
             return fractions.Fraction(unpacked[0], unpacked[1])
 
     def write(self, fp, value):
-        if isinstance(value, fractions.Fraction):
+        if self.typeid in (5, 10):
+            value = fractions.Fraction(value)
             packed = self.formatter.pack(value.numerator, value.denominator)
         else:
             packed = self.formatter.pack(value)
@@ -53,7 +54,7 @@ class Handler(object):
     @classmethod
     def build_handler(cls, endian=''):
         handlers = {}
-        for typeid, fmt in TABLE.iteritems():
+        for typeid, fmt in cls.TABLE.iteritems():
             formatter = struct.Struct(endian + fmt)
             handlers[typeid] = cls(typeid, formatter)
         return handlers
@@ -91,21 +92,22 @@ class TIFFHeader(object):
 
 class TagReader(collections.MutableMapping):
     '''
-    EXIF tag reader class for THETA image.
+    IFD reader class.
     '''
-    EXIF_ID_CODE = 'Exif\x00\x00'
-    RICOH_MAKERNOTE_CODE = 'Ricoh\x00\x00\x00'
     SUBDIR_HEADER = {
         tag.EXIF_IFD_POINTER: 0,
         tag.RICOH_SUBDIR: 20,
         tag.THETA_SUBDIR: 0
     }
 
-    def __init__(self, fp, header):
+    def __init__(self, fp, header=None):
         self.fp = fp
-        self.header = header
         self.tags = {}
         self.data = {}
+        if header is None:
+            self.header = TIFFHeader(fp)
+        else:
+            self.header = header
 
         for i in xrange(header.u16(fp)):
             tagid = header.u16(fp)
@@ -191,31 +193,58 @@ class TagReader(collections.MutableMapping):
                 d[k] = v
         return d
 
-    def tobytes(self):
-        self.fp.seek(0)
-        return self.EXIF_ID_CODE + self.fp.read()
 
-    @classmethod
-    def load(cls, img):
-        '''
-        Open image and load EXIF tags.
-        '''
+class ExifReader(object):
+    '''
+    EXIF reader class for THETA image.
+    '''
+    EXIF_ID_CODE = 'Exif\x00\x00'
+    RICOH_MAKERNOTE_CODE = 'Ricoh\x00\x00\x00'
+
+    def __init__(self, img):
         if not isinstance(img, Image.Image):
             img = Image.open(img)
         if 'exif' not in img.info:
             raise ValueError('No EXIF.')
 
-        body = img.info['exif'][len(TagReader.EXIF_ID_CODE):]
-        fp = io.BytesIO(body)
-        tiff_header = TIFFHeader(fp)
-        exif_ifd = cls(fp, tiff_header)[tag.EXIF_IFD_POINTER]
+        self.img = img
+        body = img.info['exif'][len(ExifReader.EXIF_ID_CODE):]
+        self.fp = io.BytesIO(body)
+        header = TIFFHeader(self.fp)
 
-        if tag.MAKER_NOTE not in exif_ifd:
-            raise ValueError('No MakerNote.')
+        self.ifdlist = []
+        while True:
+            ifd = TagReader(self.fp, header)
+            self.ifdlist.append(ifd)
+            if ifd.nextifd_offset:
+                self.fp.seek(ifd.nextifd_offset)
+            else:
+                break
 
-        fp.seek(exif_ifd.getoffset(tag.MAKER_NOTE))
-        code_len = len(cls.RICOH_MAKERNOTE_CODE)
-        if fp.read(code_len) != cls.RICOH_MAKERNOTE_CODE:
-            raise ValueError('No RICOH maker note.')
+        self._makernote = None
 
-        return cls(fp, tiff_header)
+    @property
+    def exif(self):
+        return self.ifdlist[0][tag.EXIF_IFD_POINTER]
+
+    @property
+    def makernote(self):
+        if not self._makernote:
+            if tag.MAKER_NOTE not in self.exif:
+                raise ValueError('No MakerNote.')
+
+            self.fp.seek(self.exif.getoffset(tag.MAKER_NOTE))
+            code_len = len(ExifReader.RICOH_MAKERNOTE_CODE)
+            if self.fp.read(code_len) != self.RICOH_MAKERNOTE_CODE:
+                raise ValueError('No RICOH maker note.')
+
+            self._makernote = TagReader(self.fp, self.exif.header)
+        return self._makernote
+
+    @property
+    def theta(self):
+        return self.makernote[tag.THETA_SUBDIR]
+
+    def tobytes(self):
+        self.fp.seek(0)
+        return self.EXIF_ID_CODE + self.fp.read()

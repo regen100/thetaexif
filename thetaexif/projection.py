@@ -1,9 +1,8 @@
 import math
 import functools
 import numpy as np
-from fractions import Fraction
 from PIL import Image
-import exif
+from exif import ExifReader
 import tag
 
 
@@ -47,11 +46,11 @@ rz = functools.partial(rotation, [0, 0, 1])
 
 
 def getpose(reader, compass=False):
-    zenith = map(float, reader[tag.THETA_SUBDIR][tag.ZENITH_ES])
+    zenith = map(float, reader.theta[tag.ZENITH_ES])
     z, x = np.deg2rad(zenith)
     r = rx(x).dot(rz(z))
     if compass:
-        y = np.deg2rad(float(reader[tag.THETA_SUBDIR][tag.COMPASS_ES]))
+        y = np.deg2rad(float(reader.theta[tag.COMPASS_ES]))
         r = ry(y).dot(r)
     return r
 
@@ -62,7 +61,7 @@ def rectify(img, compass=False):
     if not isinstance(img, Image.Image):
         img = Image.open(img)
 
-    reader = exif.TagReader.load(img)
+    reader = ExifReader(img)
     r = getpose(reader, compass).T
 
     imgarray = np.asarray(img)
@@ -72,10 +71,9 @@ def rectify(img, compass=False):
     rectified = remap(imgarray, coord)
     resultimg = Image.fromarray(rectified)
 
-    zero = Fraction(0, 10)
-    reader[tag.THETA_SUBDIR][tag.ZENITH_ES] = (zero, zero)
+    reader.theta[tag.ZENITH_ES] = (0, 0)
     if compass:
-        reader[tag.THETA_SUBDIR][tag.COMPASS_ES] = zero
+        reader.theta[tag.COMPASS_ES] = 0
     resultimg.info['exif'] = reader.tobytes()
 
     return resultimg
