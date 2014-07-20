@@ -7,6 +7,7 @@
 import io
 import collections
 import struct
+import fractions
 from PIL import Image
 import tag
 
@@ -36,7 +37,7 @@ def build_handler(endian=''):
             if len(unpacked) == 1:
                 return unpacked[0]
             else:
-                return float(unpacked[0]) / unpacked[1]
+                return fractions.Fraction(unpacked[0], unpacked[1])
         handler.size = st.size
         handler.typeid = typeid
         handlers[typeid] = handler

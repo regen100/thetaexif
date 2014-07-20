@@ -12,13 +12,18 @@ def main(argv=None):
         'image', type=argparse.FileType('rb'), help='path to image')
     args = parser.parse_args()
 
+    def formatter(tag, val):
+        if isinstance(val, tuple):
+            val = '(' + ', '.join(map(str, val)) + ')'
+        return '{}: {}'.format(tag, val)
+
     try:
         reader = exif.TagReader.load(args.image)
         for k, v in reader.iteritems():
             if not isinstance(v, exif.TagReader):
-                print '{}: {}'.format(tag.MARKERNOTE_TAGS.get(k, k), v)
+                print formatter(tag.MARKERNOTE_TAGS.get(k, k), v)
         for k, v in reader[tag.THETA_SUBDIR].iteritems():
-            print '{}: {}'.format(tag.THETASUBDIR_TGAS.get(k, k), v)
+            print formatter(tag.THETASUBDIR_TGAS.get(k, k), v)
     except (IndexError, ValueError):
         print 'Error: %s does not have THETA EXIF tag' % args.image.name
         return 1

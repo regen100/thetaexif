@@ -47,10 +47,11 @@ rz = functools.partial(rotation, [0, 0, 1])
 
 def getpose(img, compass=False):
     reader = exif.TagReader.load(img)
-    z, x = np.deg2rad(reader[tag.THETA_SUBDIR][tag.ZENITH_ES])
+    zenith = map(float, reader[tag.THETA_SUBDIR][tag.ZENITH_ES])
+    z, x = np.deg2rad(zenith)
     r = rx(x).dot(rz(z))
     if compass:
-        y = np.deg2rad(reader[tag.THETA_SUBDIR][tag.COMPASS_ES])
+        y = np.deg2rad(float(reader[tag.THETA_SUBDIR][tag.COMPASS_ES]))
         r = ry(y).dot(r)
     return r
 
