@@ -11,7 +11,7 @@ import fractions
 from PIL import Image
 import tag
 
-table = {
+TABLE = {
     1: 'B',
     2: 'c',
     3: 'H',
@@ -27,24 +27,39 @@ table = {
 }
 
 
-def build_handler(endian=''):
-    handlers = {}
-    for typeid, fmt in table.iteritems():
-        st = struct.Struct(endian + fmt)
+class Handler(object):
+    def __init__(self, typeid, formatter):
+        self.typeid = typeid
+        self.formatter = formatter
 
-        def handler(fp, st=st):
-            unpacked = st.unpack(fp.read(st.size))
-            if len(unpacked) == 1:
-                return unpacked[0]
-            else:
-                return fractions.Fraction(unpacked[0], unpacked[1])
-        handler.size = st.size
-        handler.typeid = typeid
-        handlers[typeid] = handler
-    return handlers
+    @property
+    def size(self):
+        return self.formatter.size
 
-lehandlers = build_handler('<')
-behandlers = build_handler('>')
+    def read(self, fp):
+        unpacked = self.formatter.unpack(fp.read(self.size))
+        if len(unpacked) == 1:
+            return unpacked[0]
+        else:
+            return fractions.Fraction(unpacked[0], unpacked[1])
+
+    def write(self, fp, value):
+        if isinstance(value, fractions.Fraction):
+            packed = self.formatter.pack(value.numerator, value.denominator)
+        else:
+            packed = self.formatter.pack(value)
+        fp.write(packed)
+
+    @classmethod
+    def build_handler(cls, endian=''):
+        handlers = {}
+        for typeid, fmt in TABLE.iteritems():
+            formatter = struct.Struct(endian + fmt)
+            handlers[typeid] = cls(typeid, formatter)
+        return handlers
+
+Handler.lehandlers = Handler.build_handler('<')
+Handler.behandlers = Handler.build_handler('>')
 
 
 class TIFFHeader(object):
@@ -61,17 +76,17 @@ class TIFFHeader(object):
     @property
     def handlers(self):
         if self.endian == 'II':
-            return lehandlers
+            return Handler.lehandlers
         elif self.endian == 'MM':
-            return behandlers
+            return Handler.behandlers
 
     @property
     def u16(self):
-        return self.handlers[3]
+        return self.handlers[3].read
 
     @property
     def u32(self):
-        return self.handlers[4]
+        return self.handlers[4].read
 
 
 class TagReader(collections.Mapping):
@@ -119,7 +134,7 @@ class TagReader(collections.Mapping):
         except KeyError:
             handler, num, offset = self.tags[key]
             self.fp.seek(offset)
-            value = tuple(handler(self.fp) for _ in xrange(num))
+            value = tuple(handler.read(self.fp) for _ in xrange(num))
             if handler.typeid == 2:
                 value = ''.join(value[:-1])
             elif handler.typeid == 7:
