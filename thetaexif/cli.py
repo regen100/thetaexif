@@ -31,6 +31,8 @@ def rectify(argv=None):
         if args.exif:
             params['exif'] = rectified.info['exif']
 
-        rectified.save(dst, **params)
+        with open(dst, 'wb') as fp:
+            fp = projection.NonJFIFHeaderFile(fp)
+            rectified.save(fp, 'JPEG', **params)
 
     return 0

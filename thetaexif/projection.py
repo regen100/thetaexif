@@ -79,3 +79,13 @@ def rectify(img, compass=False):
     resultimg.info['exif'] = reader.tobytes()
 
     return resultimg
+
+
+class NonJFIFHeaderFile():
+    def __init__(self, fp):
+        self.fp = fp
+
+    def write(self, b):
+        if b[:4] == '\xff\xd8\xff\xe0' and b[20:22] == '\xff\xe1':
+            b = b[:2] + b[20:]
+        return self.fp.write(b)
