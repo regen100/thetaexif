@@ -22,6 +22,17 @@ THETASUBDIR_TGAS = {
     0x0105: 'SensorSerial2',
 }
 
+EXIF_TAGS = {
+    0x0201: 'JPEGInterchangeFormat',
+    0x0202: 'JPEGInterchangeFormatLength',
+    0x0103: 'Compression',
+    0x0128: 'ResolutionUnit',
+    0x011a: 'XResolution',
+    0x011b: 'YResolution',
+    0x8769: 'ExifIFDPointer',
+    0x927c: 'MakerNote',
+}
+
 
 def _register(obj):
     import sys
@@ -30,5 +41,6 @@ def _register(obj):
         name = re.sub('((?<=[a-z0-9])[A-Z]|(?!^)[A-Z](?=[a-z]))', r'_\1', name)
         setattr(sys.modules[__name__], name.upper(), tag)
 
+_register(EXIF_TAGS)
 _register(MARKERNOTE_TAGS)
 _register(THETASUBDIR_TGAS)

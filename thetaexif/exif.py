@@ -47,44 +47,68 @@ lehandlers = build_handler('<')
 behandlers = build_handler('>')
 
 
+class TIFFHeader(object):
+    def __init__(self, fp):
+        self.endian = fp.read(2)
+        if self.endian not in ('II', 'MM'):
+            raise ValueError('endian must be II or MM.')
+        tiff_code = self.u16(fp)
+        if tiff_code != 0x002A:
+            raise ValueError('Invalid TIFF header.')
+        self.zeroth_ifd_offset = self.u32(fp)
+        fp.seek(self.zeroth_ifd_offset)
+
+    @property
+    def handlers(self):
+        if self.endian == 'II':
+            return lehandlers
+        elif self.endian == 'MM':
+            return behandlers
+
+    @property
+    def u16(self):
+        return self.handlers[3]
+
+    @property
+    def u32(self):
+        return self.handlers[4]
+
+
 class TagReader(collections.Mapping):
     '''
     EXIF tag reader class for THETA image.
     '''
-    EXIF_HEADER = 'Exif\x00\x00'
-    SUBDIR_HEADER = {tag.RICOH_SUBDIR: 20, tag.THETA_SUBDIR: 0}
+    EXIF_ID_CODE = 'Exif\x00\x00'
+    RICOH_MAKERNOTE_CODE = 'Ricoh\x00\x00\x00'
+    SUBDIR_HEADER = {
+        tag.EXIF_IFD_POINTER: 0,
+        tag.RICOH_SUBDIR: 20,
+        tag.THETA_SUBDIR: 0
+    }
 
-    def __init__(self, endian, fp):
-        self.endian = endian[:2]
+    def __init__(self, fp, header):
         self.fp = fp
+        self.header = header
         self.tags = {}
         self.data = {}
 
-        if self.endian == 'II':
-            self.handlers = lehandlers
-        elif self.endian == 'MM':
-            self.handlers = behandlers
-        else:
-            raise ValueError('endian must be II or MM.')
-
-        u16 = self.handlers[3]
-        u32 = self.handlers[4]
-
-        for i in xrange(u16(fp)):
-            tagid = u16(fp)
-            tagtype = u16(fp)
+        for i in xrange(header.u16(fp)):
+            tagid = header.u16(fp)
+            tagtype = header.u16(fp)
             try:
-                handler = self.handlers[tagtype]
+                handler = header.handlers[tagtype]
             except IndexError:
                 raise ValueError('Invalid data type.')
-            num = u32(fp)
+            num = header.u32(fp)
             if handler.size * num > 4:
-                offset = u32(fp)
+                offset = header.u32(fp)
             else:
                 offset = fp.tell()
                 fp.seek(4, io.SEEK_CUR)
 
             self.tags[tagid] = (handler, num, offset)
+
+        self.nextifd_offset = header.u32(fp)
 
     def __str__(self):
         return str(self.asdict())
@@ -105,7 +129,7 @@ class TagReader(collections.Mapping):
 
             if key in self.SUBDIR_HEADER:
                 self.fp.seek(value + self.SUBDIR_HEADER[key])
-                self.data[key] = TagReader(self.endian, self.fp)
+                self.data[key] = TagReader(self.fp, self.header)
             else:
                 self.data[key] = value
             return self.data[key]
@@ -115,6 +139,10 @@ class TagReader(collections.Mapping):
 
     def __len__(self):
         return len(self.tags)
+
+    def getoffset(self, key):
+        handler, num, offset = self.tags[key]
+        return offset
 
     def asdict(self):
         '''
@@ -133,7 +161,7 @@ class TagReader(collections.Mapping):
 
     def tobytes(self):
         self.fp.seek(0)
-        return self.EXIF_HEADER + self.fp.read()
+        return self.EXIF_ID_CODE + self.fp.read()
 
     @classmethod
     def load(cls, img):
@@ -145,12 +173,17 @@ class TagReader(collections.Mapping):
         if 'exif' not in img.info:
             raise ValueError('No EXIF.')
 
-        body = img.info['exif'][len(cls.EXIF_HEADER):]
-        offset = body.find('Ricoh\x00\x00\x00')
-        if offset == -1:
+        body = img.info['exif'][len(TagReader.EXIF_ID_CODE):]
+        fp = io.BytesIO(body)
+        tiff_header = TIFFHeader(fp)
+        exif_ifd = cls(fp, tiff_header)[tag.EXIF_IFD_POINTER]
+
+        if tag.MAKER_NOTE not in exif_ifd:
+            raise ValueError('No MakerNote.')
+
+        fp.seek(exif_ifd.getoffset(tag.MAKER_NOTE))
+        code_len = len(cls.RICOH_MAKERNOTE_CODE)
+        if fp.read(code_len) != cls.RICOH_MAKERNOTE_CODE:
             raise ValueError('No RICOH maker note.')
 
-        fp = io.BytesIO(body)
-        header = fp.read(8)
-        fp.seek(offset + 8)
-        return cls(header, fp)
+        return cls(fp, tiff_header)
