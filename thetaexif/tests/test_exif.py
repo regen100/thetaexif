@@ -24,7 +24,7 @@ class TestExif(unittest.TestCase):
 
         self.lena = Image.fromarray(misc.lena())
 
-    def test_tagreader(self):
+    def test_tagreader_load(self):
         # No EXIF image test
         img = self.lena
         self.assertRaises(ValueError, thetaexif.TagReader.load, img)
@@ -44,6 +44,9 @@ class TestExif(unittest.TestCase):
         reader = thetaexif.TagReader.load(img)
         self.assertIsInstance(reader, thetaexif.TagReader)
 
+    def test_tagreader_read(self):
+        reader = thetaexif.TagReader.load(self.image)
+
         # THETA IFD test
         self.assertIn(thetaexif.tag.THETA_SUBDIR, reader)
         subdir = reader[thetaexif.tag.THETA_SUBDIR]
@@ -57,10 +60,18 @@ class TestExif(unittest.TestCase):
         self.assertIn(thetaexif.tag.COMPASS_ES, subdir)
         self.assertEqual(subdir[thetaexif.tag.COMPASS_ES], Fraction(225, 10))
 
-        # tobytes()
+    def test_tagreader_tobytes(self):
+        img = Image.open(self.image)
+        reader = thetaexif.TagReader.load(img)
+
         self.assertEqual(reader.tobytes(), img.info['exif'])
 
-        # write to exif
+    def test_tagreader_write(self):
+        img = Image.open(self.image)
+        reader = thetaexif.TagReader.load(img)
+        subdir = reader[thetaexif.tag.THETA_SUBDIR]
+
         comapss = Fraction(1, 10)
         subdir[thetaexif.tag.COMPASS_ES] = comapss
         self.assertEqual(subdir[thetaexif.tag.COMPASS_ES], comapss)
+        self.assertNotEqual(reader.tobytes(), img.info['exif'])
