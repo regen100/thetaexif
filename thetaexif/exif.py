@@ -89,7 +89,7 @@ class TIFFHeader(object):
         return self.handlers[4].read
 
 
-class TagReader(collections.Mapping):
+class TagReader(collections.MutableMapping):
     '''
     EXIF tag reader class for THETA image.
     '''
@@ -148,6 +148,23 @@ class TagReader(collections.Mapping):
             else:
                 self.data[key] = value
             return self.data[key]
+
+    def __setitem__(self, key, values):
+        handler, num, offset = self.tags[key]
+        if not isinstance(values, collections.Sized):
+            values = (values,)
+        if num != len(values):
+            raise ValueError('Invalid length of values.')
+
+        self.fp.seek(offset)
+        for value in values:
+            handler.write(self.fp, value)
+
+        if key in self.data:
+            del self.data[key]
+
+    def __delitem__(self, key):
+        raise NotImplementedError
 
     def __iter__(self):
         return iter(self.tags)

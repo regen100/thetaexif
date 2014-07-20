@@ -2,6 +2,7 @@ import os
 import unittest
 import urllib2
 import shutil
+from fractions import Fraction
 from PIL import Image
 from scipy import misc
 import thetaexif
@@ -50,10 +51,16 @@ class TestExif(unittest.TestCase):
 
         # Sensor test
         self.assertIn(thetaexif.tag.ZENITH_ES, subdir)
-        self.assertEqual(subdir[thetaexif.tag.ZENITH_ES], (20., -24.))
+        self.assertEqual(subdir[thetaexif.tag.ZENITH_ES], (Fraction(200, 10),
+                                                           Fraction(-240, 10)))
 
         self.assertIn(thetaexif.tag.COMPASS_ES, subdir)
-        self.assertEqual(subdir[thetaexif.tag.COMPASS_ES], 22.5)
+        self.assertEqual(subdir[thetaexif.tag.COMPASS_ES], Fraction(225, 10))
 
         # tobytes()
         self.assertEqual(reader.tobytes(), img.info['exif'])
+
+        # write to exif
+        comapss = Fraction(1, 10)
+        subdir[thetaexif.tag.COMPASS_ES] = comapss
+        self.assertEqual(subdir[thetaexif.tag.COMPASS_ES], comapss)

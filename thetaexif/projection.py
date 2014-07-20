@@ -1,6 +1,7 @@
 import math
 import functools
 import numpy as np
+from fractions import Fraction
 from PIL import Image
 import exif
 import tag
@@ -70,6 +71,11 @@ def rectify(img, compass=False):
     coord = mapping.getcoordinates(w, h, r)
     rectified = remap(imgarray, coord)
     resultimg = Image.fromarray(rectified)
+
+    zero = Fraction(0, 10)
+    reader[tag.THETA_SUBDIR][tag.ZENITH_ES] = (zero, zero)
+    if compass:
+        reader[tag.THETA_SUBDIR][tag.COMPASS_ES] = zero
     resultimg.info['exif'] = reader.tobytes()
 
     return resultimg
