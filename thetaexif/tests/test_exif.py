@@ -1,28 +1,15 @@
-import os
 import unittest
-import urllib2
-import shutil
 from fractions import Fraction
 from PIL import Image
 from scipy import misc
 from thetaexif import tag
 from thetaexif.exif import ExifReader, TagReader
+import testdata
 
 
 class TestExif(unittest.TestCase):
     def setUp(self):
-        url = ('https://theta360.s3.amazonaws.com'
-               '/d32805ec-c37d-11e3-ac04-52540092ec69-1/equirectangular')
-        self.image = 'var/test.jpg'
-
-        if not os.path.exists(self.image):
-            dir = os.path.dirname(self.image)
-            if not os.path.exists(dir):
-                os.makedirs(dir)
-            req = urllib2.urlopen(url)
-            with open(self.image, 'wb') as fp:
-                shutil.copyfileobj(req, fp)
-
+        self.image = testdata.prepare_image()
         self.lena = Image.fromarray(misc.lena())
 
     def test_exifreader_load(self):
@@ -52,10 +39,9 @@ class TestExif(unittest.TestCase):
         self.assertIsInstance(reader.theta, TagReader)
 
         self.assertIn(tag.ZENITH_ES, reader.theta)
-        self.assertEqual(reader.theta[tag.ZENITH_ES], (Fraction(200, 10),
-                                                       Fraction(-240, 10)))
+        self.assertEqual(reader.theta[tag.ZENITH_ES], testdata.ZENITH_ES)
         self.assertIn(tag.COMPASS_ES, reader.theta)
-        self.assertEqual(reader.theta[tag.COMPASS_ES], Fraction(225, 10))
+        self.assertEqual(reader.theta[tag.COMPASS_ES], testdata.COMPASS_ES)
 
     def test_exifreader_tobytes(self):
         reader = ExifReader(self.image)
