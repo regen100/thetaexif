@@ -245,6 +245,23 @@ class ExifReader(object):
     def theta(self):
         return self.makernote[tag.THETA_SUBDIR]
 
+    @property
+    def thumbnail(self):
+        offset = self.ifdlist[1][tag.JPEG_INTERCHANGE_FORMAT]
+        length = self.ifdlist[1][tag.JPEG_INTERCHANGE_FORMAT_LENGTH]
+        self.fp.seek(offset)
+        fp = io.BytesIO(self.fp.read(length))
+        return Image.open(fp)
+
+    @thumbnail.setter
+    def thumbnail(self, img):
+        offset = self.ifdlist[1][tag.JPEG_INTERCHANGE_FORMAT]
+        self.fp.seek(offset)
+        img.save(self.fp, 'JPEG')
+        end = self.fp.tell()
+        self.fp.truncate()
+        self.ifdlist[1][tag.JPEG_INTERCHANGE_FORMAT_LENGTH] = end - offset
+
     def tobytes(self):
         self.fp.seek(0)
         return self.EXIF_ID_CODE + self.fp.read()

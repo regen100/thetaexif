@@ -71,9 +71,15 @@ def rectify(img, compass=False):
     rectified = remap(imgarray, coord)
     resultimg = Image.fromarray(rectified)
 
+    # Rewrite gyroscope and compass data
     reader.theta[tag.ZENITH_ES] = (0, 0)
     if compass:
         reader.theta[tag.COMPASS_ES] = 0
+
+    # Rewrite thumbnail
+    size = reader.thumbnail.size
+    reader.thumbnail = resultimg.resize(size, Image.ANTIALIAS)
+
     resultimg.info['exif'] = reader.tobytes()
 
     return resultimg
