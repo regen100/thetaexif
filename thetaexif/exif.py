@@ -250,6 +250,8 @@ class ExifReader(object):
 
     @property
     def theta(self):
+        if tag.THETA_SUBDIR not in self.makernote:
+            raise ValueError('No THETA subdir.')
         return self.makernote[tag.THETA_SUBDIR]
 
     @property
