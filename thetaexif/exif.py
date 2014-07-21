@@ -113,9 +113,11 @@ class TagReader(collections.MutableMapping):
         for i in xrange(header.u16(fp)):
             tagid = header.u16(fp)
             tagtype = header.u16(fp)
+            if tagid == 0 and tagtype == 0:
+                continue
             try:
                 handler = header.handlers[tagtype]
-            except IndexError:
+            except KeyError:
                 raise ValueError('Invalid data type.')
             num = header.u32(fp)
             if handler.size * num > 4:
