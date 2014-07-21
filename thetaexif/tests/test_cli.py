@@ -22,6 +22,8 @@ class TestCLI(unittest.TestCase):
         reader = ExifReader(self.rectified)
         self.assertEqual(reader.theta[tag.ZENITH_ES], (0, 0))
         self.assertEqual(reader.theta[tag.COMPASS_ES], testdata.COMPASS_ES)
+        self.assertEqual(reader.gps[tag.GPS_IMG_DIRECTION],
+                         testdata.COMPASS_ES)
         reader.img.fp.close()
         os.unlink(self.rectified)
 
@@ -31,6 +33,7 @@ class TestCLI(unittest.TestCase):
         reader = ExifReader(self.rectified)
         self.assertEqual(reader.theta[tag.ZENITH_ES], (0, 0))
         self.assertEqual(reader.theta[tag.COMPASS_ES], 0)
+        self.assertEqual(reader.gps[tag.GPS_IMG_DIRECTION], 0)
         reader.img.fp.close()
         os.unlink(self.rectified)
 

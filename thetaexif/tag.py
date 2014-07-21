@@ -1,3 +1,19 @@
+EXIF_TAGS = {
+    0x0103: 'Compression',
+    0x011a: 'XResolution',
+    0x011b: 'YResolution',
+    0x0128: 'ResolutionUnit',
+    0x0201: 'JPEGInterchangeFormat',
+    0x0202: 'JPEGInterchangeFormatLength',
+    0x8769: 'ExifIFDPointer',
+    0x8825: 'GPSInfoIFDPointer',
+    0x927c: 'MakerNote',
+}
+
+GPS_TAGS = {
+    0x0011: 'GPSImgDirection',
+}
+
 MARKERNOTE_TAGS = {
     0x0001: 'MakerNoteType',
     0x0002: 'FirmwareVersion',
@@ -22,17 +38,6 @@ THETASUBDIR_TGAS = {
     0x0105: 'SensorSerial2',
 }
 
-EXIF_TAGS = {
-    0x0201: 'JPEGInterchangeFormat',
-    0x0202: 'JPEGInterchangeFormatLength',
-    0x0103: 'Compression',
-    0x0128: 'ResolutionUnit',
-    0x011a: 'XResolution',
-    0x011b: 'YResolution',
-    0x8769: 'ExifIFDPointer',
-    0x927c: 'MakerNote',
-}
-
 
 def _register(obj):
     import sys
@@ -42,5 +47,6 @@ def _register(obj):
         setattr(sys.modules[__name__], name.upper(), tag)
 
 _register(EXIF_TAGS)
+_register(GPS_TAGS)
 _register(MARKERNOTE_TAGS)
 _register(THETASUBDIR_TGAS)

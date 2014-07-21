@@ -42,6 +42,8 @@ class TestExif(unittest.TestCase):
         self.assertEqual(reader.theta[tag.ZENITH_ES], testdata.ZENITH_ES)
         self.assertIn(tag.COMPASS_ES, reader.theta)
         self.assertEqual(reader.theta[tag.COMPASS_ES], testdata.COMPASS_ES)
+        self.assertEqual(reader.gps[tag.GPS_IMG_DIRECTION],
+                         testdata.COMPASS_ES)
 
     def test_exifreader_tobytes(self):
         reader = ExifReader(self.image)

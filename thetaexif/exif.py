@@ -96,6 +96,7 @@ class TagReader(collections.MutableMapping):
     '''
     SUBDIR_HEADER = {
         tag.EXIF_IFD_POINTER: 0,
+        tag.GPS_INFO_IFD_POINTER: 0,
         tag.RICOH_SUBDIR: 20,
         tag.THETA_SUBDIR: 0
     }
@@ -226,6 +227,10 @@ class ExifReader(object):
     @property
     def exif(self):
         return self.ifdlist[0][tag.EXIF_IFD_POINTER]
+
+    @property
+    def gps(self):
+        return self.ifdlist[0][tag.GPS_INFO_IFD_POINTER]
 
     @property
     def makernote(self):

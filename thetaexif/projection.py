@@ -75,6 +75,7 @@ def rectify(img, compass=False):
     reader.theta[tag.ZENITH_ES] = (0, 0)
     if compass:
         reader.theta[tag.COMPASS_ES] = 0
+        reader.gps[tag.GPS_IMG_DIRECTION] = 0
 
     # Rewrite thumbnail
     size = reader.thumbnail.size
