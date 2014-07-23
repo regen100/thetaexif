@@ -50,9 +50,9 @@ setup(
     test_suite='thetaexif.tests',
     install_requires=['numpy', 'pillow'],
     tests_require=['scipy'],
-    extras_require={'rectify': ['cython']},
+    extras_require={'tool': ['cython']},
     entry_points={
-        'console_scripts': ['theta-rectify = thetaexif.cli:rectify [rectify]'],
+        'console_scripts': ['theta-tool = thetaexif.cli:parse [tool]'],
     },
     cmdclass={
         'build_ext': util.gen_build_ext(table),
