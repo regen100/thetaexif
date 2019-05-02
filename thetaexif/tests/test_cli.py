@@ -1,8 +1,10 @@
 import os
 import unittest
+
 from thetaexif import ExifReader, tag
 from thetaexif.cli import parse
-import testdata
+
+from . import testdata
 
 
 class TestCLI(unittest.TestCase):
@@ -10,13 +12,13 @@ class TestCLI(unittest.TestCase):
         self.image = testdata.prepare_image()
         self.rectified = os.path.splitext(self.image)[0] + '_rectified.jpg'
 
-    def test_rectify(self):
+    def test_rectify_without_exif(self):
         parse(['rectify', self.image])
         self.assertTrue(os.path.exists(self.rectified))
         self.assertRaises(ValueError, ExifReader, self.rectified)
         os.unlink(self.rectified)
 
-        # write EXIF
+    def test_rectify_with_exif(self):
         parse(['rectify', self.image, '-e'])
         self.assertTrue(os.path.exists(self.rectified))
         reader = ExifReader(self.rectified)
@@ -27,7 +29,7 @@ class TestCLI(unittest.TestCase):
         reader.img.fp.close()
         os.unlink(self.rectified)
 
-        # write EXIF (using compass)
+    def test_rectify_with_exif_compass(self):
         parse(['rectify', self.image, '-e', '-c'])
         self.assertTrue(os.path.exists(self.rectified))
         reader = ExifReader(self.rectified)
