@@ -2,8 +2,8 @@ import unittest
 from fractions import Fraction
 
 from PIL import Image
-
 from scipy import misc
+
 from thetaexif import tag
 from thetaexif.exif import ExifReader, TagReader
 
@@ -15,20 +15,19 @@ class TestExif(unittest.TestCase):
         self.image = testdata.prepare_image()
         self.image_wo_exif = Image.fromarray(misc.face())
 
-    def test_exifreader_load(self):
-        # No EXIF image test
+    def test_exifreader_load_without_exif(self):
         img = self.image_wo_exif
         self.assertRaises(ValueError, ExifReader, img)
 
-        # ExifReader() test (str)
+    def test_exifreader_load_str(self):
         img = self.image
         ExifReader(img)
 
-        # ExifReader() test (file object)
+    def test_exifreader_load_fp(self):
         with open(self.image, 'rb') as img:
             ExifReader(img)
 
-        # ExifReader() test (PIL)
+    def test_exifreader_load_pillow(self):
         with Image.open(self.image) as img:
             ExifReader(img)
 
