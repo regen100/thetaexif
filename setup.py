@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 setup(
     name='thetaexif',
-    version='0.1',
+    version='0.2',
     author='Regen',
     author_email='git@exadge.com',
     description='THETA EXIF Library',
@@ -19,6 +19,8 @@ setup(
         'License :: OSI Approved :: MIT License',
         'Operating System :: OS Independent',
         'Topic :: Utilities',
+        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
     ],
     packages=find_packages(exclude=['*.tests']),
     test_suite='thetaexif.tests',
