@@ -1,7 +1,8 @@
 import argparse
 import os
 
-from . import projection
+from . import projection, tag
+from .exif import ExifReader, TagReader
 
 
 def rectify(args):
@@ -30,6 +31,36 @@ def rectify(args):
     return 0
 
 
+def info(args):
+    def formatter(reader, tags):
+        for k, v in reader.items():
+            if isinstance(v, TagReader):
+                continue
+            line = '0x%04x' % k
+            if k in tags:
+                line += ' [%s]' % tags[k]
+            if isinstance(v, tuple):
+                v = '(' + ', '.join(map(str, v)) + ')'
+            line += ': %s' % v
+            print(line)
+
+    try:
+        reader = ExifReader(args.image)
+        makernote = reader.makernote
+        theta = reader.theta
+    except ValueError as e:
+        print('Error:', e)
+        return 1
+
+    print('RICOH Marker Note')
+    formatter(makernote, tag.MARKERNOTE_TAGS)
+    print()
+    print('THETA Subdir')
+    formatter(theta, tag.THETASUBDIR_TGAS)
+
+    return 0
+
+
 def parse(argv=None):
     parser = argparse.ArgumentParser(description='THETA Image Tool')
     subparsers = parser.add_subparsers()
@@ -54,5 +85,13 @@ def parse(argv=None):
                                 action='store_true',
                                 help='write EXIF')
 
+    # Info
+    parser_info = subparsers.add_parser('info',
+                                        description='display THETA EXIF tag')
+    parser_info.set_defaults(func=info)
+    parser_info.add_argument('image',
+                             type=argparse.FileType('rb'),
+                             help='path to image')
+
     args = parser.parse_args(argv)
-    args.func(args)
+    return args.func(args)
