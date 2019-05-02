@@ -36,12 +36,17 @@ def info(args):
         for k, v in reader.items():
             if isinstance(v, TagReader):
                 continue
-            line = '0x%04x' % k
+            line = '0x{:04x}'.format(k)
             if k in tags:
-                line += ' [%s]' % tags[k]
+                line += ' [{}]'.format(tags[k])
             if isinstance(v, tuple):
                 v = '(' + ', '.join(map(str, v)) + ')'
-            line += ': %s' % v
+            elif isinstance(v, bytes):
+                try:
+                    v = v.decode('ascii')
+                except UnicodeDecodeError:
+                    pass
+            line += ': {}'.format(v)
             print(line)
 
     try:
