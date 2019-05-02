@@ -1,20 +1,23 @@
 import unittest
 from fractions import Fraction
+
 from PIL import Image
+
 from scipy import misc
 from thetaexif import tag
 from thetaexif.exif import ExifReader, TagReader
-import testdata
+
+from . import testdata
 
 
 class TestExif(unittest.TestCase):
     def setUp(self):
         self.image = testdata.prepare_image()
-        self.lena = Image.fromarray(misc.lena())
+        self.image_wo_exif = Image.fromarray(misc.face())
 
     def test_exifreader_load(self):
         # No EXIF image test
-        img = self.lena
+        img = self.image_wo_exif
         self.assertRaises(ValueError, ExifReader, img)
 
         # ExifReader() test (str)
@@ -22,12 +25,12 @@ class TestExif(unittest.TestCase):
         ExifReader(img)
 
         # ExifReader() test (file object)
-        img = open(self.image, 'rb')
-        ExifReader(img)
+        with open(self.image, 'rb') as img:
+            ExifReader(img)
 
         # ExifReader() test (PIL)
-        img = Image.open(self.image)
-        ExifReader(img)
+        with Image.open(self.image) as img:
+            ExifReader(img)
 
     def test_exifreader_read(self):
         reader = ExifReader(self.image)
@@ -62,6 +65,7 @@ class TestExif(unittest.TestCase):
         self.assertEqual(reader.theta[tag.COMPASS_ES], comapss)
 
         self.assertNotEqual(reader.tobytes(), reader.img.info['exif'])
+
 
 if __name__ == '__main__':
     unittest.main()

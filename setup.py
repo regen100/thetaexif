@@ -1,29 +1,4 @@
-from setuptools import setup, find_packages, Extension
-import util
-
-table = {
-    'msvc': {
-        'openmp': ('/openmp', ''),
-    },
-    'default': {
-        'openmp': ('-fopenmp', '-fopenmp'),
-    },
-}
-
-try:
-    import cython
-    import numpy as np
-    ext_modules = [
-        Extension(
-            'thetaexif.mapping',
-            ['cy/mapping.pyx'],
-            include_dirs=[np.get_include()],
-            extra_compile_args=['openmp'],
-            extra_link_args=['openmp'],
-        ),
-    ]
-except ImportError:
-    ext_modules = []
+from setuptools import find_packages, setup
 
 setup(
     name='thetaexif',
@@ -46,15 +21,9 @@ setup(
         'Topic :: Utilities',
     ],
     packages=find_packages(exclude=['*.tests']),
-    ext_modules=ext_modules,
     test_suite='thetaexif.tests',
-    install_requires=['numpy', 'pillow'],
-    tests_require=['scipy'],
-    extras_require={'tool': ['cython']},
+    install_requires=['numpy', 'scipy', 'pillow'],
     entry_points={
-        'console_scripts': ['theta-tool = thetaexif.cli:parse [tool]'],
-    },
-    cmdclass={
-        'build_ext': util.gen_build_ext(table),
+        'console_scripts': ['theta-tool = thetaexif.cli:parse'],
     },
 )

@@ -4,12 +4,14 @@
 # - http://www.sno.phy.queensu.ca/~phil/exiftool/TagNames/Ricoh.html
 # - https://github.com/atotto/ricoh-theta-tools
 
-import io
 import collections
-import struct
 import fractions
+import io
+import struct
+
 from PIL import Image
-import tag
+
+from . import tag
 
 
 class Handler(object):
@@ -54,10 +56,11 @@ class Handler(object):
     @classmethod
     def build_handler(cls, endian=''):
         handlers = {}
-        for typeid, fmt in cls.TABLE.iteritems():
+        for typeid, fmt in cls.TABLE.items():
             formatter = struct.Struct(endian + fmt)
             handlers[typeid] = cls(typeid, formatter)
         return handlers
+
 
 Handler.lehandlers = Handler.build_handler('<')
 Handler.behandlers = Handler.build_handler('>')
@@ -66,8 +69,8 @@ Handler.behandlers = Handler.build_handler('>')
 class TIFFHeader(object):
     def __init__(self, fp):
         self.endian = fp.read(2)
-        if self.endian not in ('II', 'MM'):
-            raise ValueError('endian must be II or MM.')
+        if self.endian not in (b'II', b'MM'):
+            raise ValueError('endian must be II or MM: {}'.format(self.endian))
         tiff_code = self.u16(fp)
         if tiff_code != 0x002A:
             raise ValueError('Invalid TIFF header.')
@@ -76,9 +79,9 @@ class TIFFHeader(object):
 
     @property
     def handlers(self):
-        if self.endian == 'II':
+        if self.endian == b'II':
             return Handler.lehandlers
-        elif self.endian == 'MM':
+        elif self.endian == b'MM':
             return Handler.behandlers
 
     @property
@@ -110,7 +113,7 @@ class TagReader(collections.MutableMapping):
         else:
             self.header = header
 
-        for i in xrange(header.u16(fp)):
+        for i in range(header.u16(fp)):
             tagid = header.u16(fp)
             tagtype = header.u16(fp)
             if tagid == 0 and tagtype == 0:
@@ -139,11 +142,11 @@ class TagReader(collections.MutableMapping):
         except KeyError:
             handler, num, offset = self.tags[key]
             self.fp.seek(offset)
-            value = tuple(handler.read(self.fp) for _ in xrange(num))
+            value = tuple(handler.read(self.fp) for _ in range(num))
             if handler.typeid == 2:
-                value = ''.join(value[:-1])
+                value = b''.join(value[:-1])
             elif handler.typeid == 7:
-                value = ''.join(value)
+                value = b''.join(value)
             elif len(value) == 1:
                 value = value[0]
 
@@ -156,8 +159,8 @@ class TagReader(collections.MutableMapping):
 
     def __setitem__(self, key, values):
         handler, num, offset = self.tags[key]
-        if not isinstance(values, collections.Sized):
-            values = (values,)
+        if not isinstance(values, collections.abc.Sized):
+            values = (values, )
         if num != len(values):
             raise ValueError('Invalid length of values.')
 
@@ -189,7 +192,7 @@ class TagReader(collections.MutableMapping):
 
     def _dict(self, obj):
         d = {}
-        for k, v in obj.iteritems():
+        for k, v in obj.items():
             if isinstance(v, self.__class__):
                 d[k] = self._dict(v)
             else:
@@ -198,11 +201,10 @@ class TagReader(collections.MutableMapping):
 
 
 class ExifReader(object):
-    '''
-    EXIF reader class for THETA image.
-    '''
-    EXIF_ID_CODE = 'Exif\x00\x00'
-    RICOH_MAKERNOTE_CODE = 'Ricoh\x00\x00\x00'
+    """EXIF reader class for THETA image."""
+
+    EXIF_ID_CODE = b'Exif\x00\x00'
+    RICOH_MAKERNOTE_CODE = b'Ricoh\x00\x00\x00'
 
     def __init__(self, img):
         if not isinstance(img, Image.Image):

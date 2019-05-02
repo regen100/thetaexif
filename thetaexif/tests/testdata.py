@@ -1,6 +1,6 @@
 import os
 import shutil
-import urllib2
+import urllib.request
 from fractions import Fraction
 
 URL = ('https://theta360.s3.amazonaws.com'
@@ -16,7 +16,7 @@ def prepare_image():
         dir = os.path.dirname(image)
         if not os.path.exists(dir):
             os.makedirs(dir)
-        req = urllib2.urlopen(URL)
+        req = urllib.request.urlopen(URL)
         with open(image, 'wb') as fp:
             shutil.copyfileobj(req, fp)
 
