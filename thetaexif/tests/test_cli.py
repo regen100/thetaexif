@@ -1,8 +1,10 @@
 import os
 import unittest
+
 from thetaexif import ExifReader, tag
 from thetaexif.cli import parse
-import testdata
+
+from . import testdata
 
 
 class TestCLI(unittest.TestCase):

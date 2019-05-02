@@ -40,11 +40,12 @@ THETASUBDIR_TGAS = {
 
 
 def _register(obj):
-    import sys
     import re
-    for tag, name in obj.iteritems():
+    import sys
+    for tag, name in obj.items():
         name = re.sub('((?<=[a-z0-9])[A-Z]|(?!^)[A-Z](?=[a-z]))', r'_\1', name)
         setattr(sys.modules[__name__], name.upper(), tag)
+
 
 _register(EXIF_TAGS)
 _register(GPS_TAGS)

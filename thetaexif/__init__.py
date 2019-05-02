@@ -1,5 +1,5 @@
-from exif import ExifReader
-from projection import rectify
-import tag
+from . import tag
+from .exif import ExifReader
+from .projection import rectify
 
 __all__ = ['ExifReader', 'rectify', 'tag']
